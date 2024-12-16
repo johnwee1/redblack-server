@@ -12,6 +12,7 @@ const io = new Server(httpServer, {
       "http://localhost:5174",
       "https://playredblack.netlify.app",
     ],
+    methods: ["GET", "POST"],
     credentials: true,
   },
 });
