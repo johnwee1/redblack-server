@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Socket.IO Test</title>
+        <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    </head>
+    <body>
+        <h1>Socket.IO Test Client</h1>
+        <div id="messages"></div>
+
+        <script>
+            // Make socket global so it's accessible in console
+            window.socket = io("http://localhost:3000");
+
+            socket.on("connect", () => {
+                console.log("Connected to server");
+                document.getElementById("messages").innerHTML +=
+                    "<p>Connected to server</p>";
+            });
+
+            // Generic event listener to show all incoming events
+            socket.onAny((eventName, ...args) => {
+                console.log("Received event:", eventName, "with data:", args);
+                document.getElementById("messages").innerHTML +=
+                    `<p>Received ${eventName}: ${JSON.stringify(args)}</p>`;
+            });
+        </script>
+    </body>
+</html>
