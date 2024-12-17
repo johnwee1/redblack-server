@@ -2,6 +2,7 @@ import { createServer } from "http";
 import express from "express";
 import { Server } from "socket.io";
 import initializeSocket from "./socket/gameHandlers";
+import { keepAlive } from "./cron/keepAlive";
 
 const app = express();
 const httpServer = createServer(app);
@@ -24,6 +25,8 @@ app.get("/", (req, res) => {
 // app.use(express.static("public"));
 
 initializeSocket(io);
+
+keepAlive();
 
 const PORT = 3000;
 httpServer.listen(PORT, () => {
