@@ -1,7 +1,8 @@
 import gameService from "../services/GameService";
 import GameSession from "../models/GameSession";
 import { Server, Socket } from "socket.io";
-const TIMEOUT_MS = 600_000;
+import { TIMEOUT } from "node:dns/promises";
+const TIMEOUT_MS = 60_000;
 
 const publicSessionInfo = (gameSession: GameSession) => {
   return {
@@ -160,6 +161,10 @@ const initializeSocket = (io: Server) => {
       }
       gameSession.state = "answer";
       io.to(roomAlias).emit("sessionInfo", publicSessionInfo(gameSession));
+      io.to(roomAlias).emit(
+        "message",
+        `Info: You have ${TIMEOUT_MS / 1000} seconds to answer for each phase!`,
+      );
 
       // start server-side timer for the answer phase
       setTimeout(() => {
@@ -192,7 +197,7 @@ const initializeSocket = (io: Server) => {
               guesses: [...gameSession.getAllGuesses().entries()],
             });
           }
-        }, TIMEOUT_MS); // 30 seconds
+        }, TIMEOUT_MS);
       }
     });
 
@@ -220,6 +225,7 @@ const initializeSocket = (io: Server) => {
       );
       if (!playerID) {
         socket.emit("message", "Player not found");
+        console.log("gameHandler 228: Player not found");
         return;
       }
       const answer = gameSession.getPlayerAnswer(
@@ -227,7 +233,8 @@ const initializeSocket = (io: Server) => {
         nameOfPlayerToGuess,
       );
       if (!answer) {
-        socket.emit("message", "Answer not found");
+        socket.emit("message", "Answer not found. Did bro forget to answer?");
+        console.log("gameHandler 237: Answer not found");
         return;
       }
       io.to(roomAlias).emit("playerAnswer", {
@@ -241,7 +248,7 @@ const initializeSocket = (io: Server) => {
           if (gameSession.state !== "reveal") return;
           gameSession.reset();
           io.to(roomAlias).emit("sessionInfo", publicSessionInfo(gameSession));
-        }, 10_000);
+        }, TIMEOUT_MS * 2);
       }
       return;
     });
