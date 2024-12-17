@@ -17,6 +17,10 @@ const io = new Server(httpServer, {
   },
 });
 
+app.get("/", (req, res) => {
+  res.status(200).send("playredblack.netlify.app");
+});
+
 // app.use(express.static("public"));
 
 initializeSocket(io);
