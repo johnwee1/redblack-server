@@ -1,5 +1,3 @@
-import fetch from "node-fetch";
-
 // run every 14 minutes
 export const keepAlive = () => {
   setInterval(
