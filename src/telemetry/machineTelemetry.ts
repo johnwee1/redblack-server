@@ -9,7 +9,6 @@ type MachineTelemetry = {
 };
 
 let latestMachineTelemetry: {
-  receivedAt: string;
   data: MachineTelemetry;
 } | null = null;
 
@@ -62,7 +61,6 @@ export function createMachineTelemetryRouter(): Router {
     }
 
     latestMachineTelemetry = {
-      receivedAt: new Date().toISOString(),
       data: req.body as MachineTelemetry,
     };
 
