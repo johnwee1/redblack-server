@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Collect machine telemetry and POST it to the RedBlack server."""
+"""Collect machine telemetry and POST it to a remote server.
+Stats are viewable at https://redblack-server.onrender.com/
+"""
 
 from __future__ import annotations
 
@@ -25,9 +27,22 @@ def run_command(*args: str) -> str:
     return result.stdout.strip()
 
 
-def process_command(pid: int) -> str:
-    output = run_command("ps", "-p", str(pid), "-o", "command=")
-    return output or "unknown"
+def get_process_info(pid: int) -> dict[str, str]:
+    output = run_command("ps", "-p", str(pid), "-o", "user=,etime=,command=")
+    if not output:
+        return {"user": "unknown", "elapsed": "unknown", "command": "unknown"}
+    parts = output.strip().split(None, 2)
+    if len(parts) < 3:
+        return {
+            "user": parts[0] if len(parts) > 0 else "unknown",
+            "elapsed": parts[1] if len(parts) > 1 else "unknown",
+            "command": "unknown",
+        }
+    return {
+        "user": parts[0],
+        "elapsed": parts[1],
+        "command": parts[2],
+    }
 
 
 def collect_gpu() -> dict[str, object] | None:
@@ -55,11 +70,14 @@ def collect_gpu() -> dict[str, object] | None:
             continue
 
         pid = int(values[0])
+        proc_info = get_process_info(pid)
         processes.append(
             {
                 "pid": pid,
+                "user": proc_info["user"],
+                "elapsed": proc_info["elapsed"],
                 "vramUsedMiB": int(values[1]),
-                "command": process_command(pid),
+                "command": proc_info["command"],
             }
         )
 
@@ -71,16 +89,16 @@ def collect_gpu() -> dict[str, object] | None:
 
 
 def collect_cpu_processes() -> list[dict[str, object]]:
-    output = run_command("ps", "-axo", "pid=,pcpu=,etime=,command=")
+    output = run_command("ps", "-axo", "user=,pid=,pcpu=,etime=,command=")
     processes = []
     for line in output.splitlines():
-        parts = line.strip().split(None, 3)
-        if len(parts) < 4:
+        parts = line.strip().split(None, 4)
+        if len(parts) < 5:
             continue
 
         try:
-            cpu_percent = float(parts[1])
-            pid = int(parts[0])
+            cpu_percent = float(parts[2])
+            pid = int(parts[1])
         except ValueError:
             continue
 
@@ -90,9 +108,10 @@ def collect_cpu_processes() -> list[dict[str, object]]:
         processes.append(
             {
                 "pid": pid,
+                "user": parts[0],
                 "cpuPercent": cpu_percent,
-                "elapsed": parts[2],
-                "command": parts[3],
+                "elapsed": parts[3],
+                "command": parts[4],
             }
         )
 
@@ -110,7 +129,9 @@ def collect_telemetry() -> dict[str, object]:
 
 
 def send_telemetry(telemetry: dict[str, object]) -> None:
-    url = os.environ.get("TELEMETRY_URL", "http://localhost:3000/machine-data")
+    url = os.environ.get(
+        "TELEMETRY_URL", "https://redblack-server.onrender.com/machine-data"
+    )
     body = json.dumps(telemetry).encode("utf-8")
     request = urllib.request.Request(
         url,
