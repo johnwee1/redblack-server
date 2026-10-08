@@ -3,6 +3,7 @@ import express from "express";
 import { Server } from "socket.io";
 import initializeSocket from "./socket/gameHandlers";
 import { keepAlive } from "./cron/keepAlive";
+import { createMachineTelemetryRouter } from "./telemetry/machineTelemetry";
 
 const app = express();
 const httpServer = createServer(app);
@@ -18,9 +19,8 @@ const io = new Server(httpServer, {
   },
 });
 
-app.get("/", (req, res) => {
-  res.status(200).send("playredblack.netlify.app");
-});
+app.use(express.json({ limit: "64kb" }));
+app.use(createMachineTelemetryRouter());
 
 // app.use(express.static("public"));
 
